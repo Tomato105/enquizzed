@@ -1,0 +1,2 @@
+example: 예, 본보기, 전형
+例: example, instance
