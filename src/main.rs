@@ -19,8 +19,7 @@ fn quiz(words: &Vec<Word>) {
             }
             let i = thread_rng().gen_range(0..words.len());
             let selected: &Word = words.get(i).unwrap();
-            println!("{}:", selected.word);
-            print!(">>> ");
+            print!("{}:\n>>> ", selected.word);
             stdout().flush().unwrap();
             (selected, i)
         };
@@ -48,44 +47,33 @@ fn quiz(words: &Vec<Word>) {
                 .map(|(x, y)| (false, x, y))
                 .collect::<Vec<(bool, &String, &String)>>();
 
-            let mut is_first = true;
-
-            responds.iter().for_each(|res_raw| {
-                if is_first {
-                    is_first = false
-                } else {
-                    print!(", ");
-                }
-
+            let print = responds.iter().map(|res_raw| {
                 let res = res_raw.replace(' ', "");
 
                 if res == "stop" {
                     do_stop = true;
+                    String::new()
                 } else if let Some((is_answered, answer_raw, _)) =
                     meanings.iter_mut().find(|(_, _, answer)| **answer == res)
                 {
                     *is_answered = true;
-                    print!("{}", answer_raw.bright_green());
-                    if res_raw != *answer_raw {
-                        print!(
-                            "{}{}{}",
-                            "(".bright_black(),
-                            res_raw.bright_black(),
-                            ")".bright_black()
-                        );
-                    }
+                    format!(
+                        "{}{}",
+                        answer_raw.bright_green(),
+                        if res_raw != *answer_raw { format!("({})", res_raw).bright_black()} else { "".bright_black() }
+                    )
                 } else {
-                    print!("{}", res_raw.bright_red());
                     is_answer_correct = false;
+                    res_raw.bright_red().to_string()
                 }
-            });
+            }).collect::<Vec<String>>().join(", ");
+
+            println!("{}", print);
 
             // 전부 맞춰야 정답 처리
             if !meanings.iter().all(|(is_answered, _, _)| *is_answered) {
                 is_answer_correct = false;
             }
-
-            println!();
 
             meanings
         };
@@ -95,28 +83,14 @@ fn quiz(words: &Vec<Word>) {
             if is_answer_correct {
                 words.remove(i);
             } else {
-                print!("correct: ");
-                let mut is_first = true;
-
-                for (is_answered, answer_raw, _) in meanings {
-                    if is_first {
-                        is_first = false;
-                    } else {
-                        print!(", ");
-                    }
-
-                    print!(
-                        "{}",
-                        if is_answered {
-                            answer_raw.bright_green()
-                        } else {
-                            answer_raw.bright_red()
-                        }
-                    );
-                }
-                println!();
+                let message = meanings.iter()
+                    .map(
+                        |(is_answered, answer_raw, _)|
+                            (if *is_answered { answer_raw.bright_green() } else { answer_raw.bright_red() }).to_string()
+                    ).collect::<Vec<String>>().join(", ");
+                
+                println!("correct: {}", message);
             }
-
             println!();
 
             if do_stop {
@@ -128,7 +102,7 @@ fn quiz(words: &Vec<Word>) {
 
 fn read_text() -> String {
     let Ok(mut read) = File::open("words.txt") else {
-        println!("{}","Cannot find words.txt.\n\
+        println!("{}", "Cannot find words.txt.\n\
             Enter any text to close this window.\n\n\
             words.txt를 찾을 수 없습니다.\n\
             창을 닫으려면 아무 내용이나 입력하십시오. "
