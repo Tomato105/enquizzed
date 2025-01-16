@@ -68,12 +68,16 @@ fn quiz(words: &Vec<Word>) {
                 }
             }).collect::<Vec<String>>().join(", ");
 
-            println!("{}", print);
-
             // 전부 맞춰야 정답 처리
             if !meanings.iter().all(|(is_answered, _, _)| *is_answered) {
                 is_answer_correct = false;
             }
+
+            println!(
+                "{} {}",
+                if is_answer_correct { "[O]".green() } else { "[-]".red() },
+                print
+            );
 
             meanings
         };
