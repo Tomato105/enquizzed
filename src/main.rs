@@ -1,3 +1,4 @@
+use std::collections::{HashMap, HashSet};
 use colored::Colorize;
 use rand::{thread_rng, Rng};
 use std::fs::File;
@@ -5,11 +6,27 @@ use std::io::{stdin, stdout, Read, Write};
 
 fn main() {
     let words = text_to_words(read_text());
-    quiz(&words)
+    'outer: loop {
+        quiz(&words);
+        loop {
+            println!("Congratulations! Will you continue? (y/n)");
+            let mut answer = String::new();
+            stdin().read_line(&mut answer).unwrap();
+            let answer = answer.trim();
+            if answer == "y" {
+                continue 'outer;
+            } else if answer == "n" {
+                break 'outer;
+            } else {
+                continue;
+            }
+        }
+    }
 }
 
-fn quiz(words: &Vec<Word>) {
-    let mut words = words.clone();
+fn quiz(words_raw: &Vec<Word>) {
+    let mut words = words_raw.iter().collect::<Vec<&Word>>();
+    let mut wrongs = words.clone().into_iter().map(|w| (&w.word, (w, 0u8))).collect::<HashMap<_, _>>();
 
     loop {
         // 출제
@@ -92,7 +109,9 @@ fn quiz(words: &Vec<Word>) {
                         |(is_answered, answer_raw, _)|
                             (if *is_answered { answer_raw.bright_green() } else { answer_raw.bright_red() }).to_string()
                     ).collect::<Vec<String>>().join(", ");
-                
+
+                *(&mut wrongs.get_mut(&words[i].word).unwrap().1) += 1;
+
                 println!("correct: {}", message);
             }
             println!();
@@ -102,6 +121,22 @@ fn quiz(words: &Vec<Word>) {
             }
         }
     }
+
+    let mut items = wrongs.iter()
+        .filter_map(|(_, (word, wrongs))| if *wrongs == 0 { None } else { Some((word, wrongs))})
+        .collect::<Vec<_>>();
+    items.sort_by(|x, y| y.1.cmp(x.1));
+    
+    items
+        .iter()
+        .for_each(|(word, wrongs)| { 
+            println!(
+                "({}{:>2}) {}: {}",
+                "-".bright_red(),
+                wrongs.to_string().bright_red(),
+                word.word,
+                word.meanings.iter().map(|(x, _)| x.to_owned()).collect::<Vec<String>>().join(", "));
+        });
 }
 
 fn read_text() -> String {
@@ -138,5 +173,5 @@ fn text_to_words(text: String) -> Vec<Word> {
 #[derive(Clone)]
 struct Word {
     word: String,
-    meanings: Vec<(String, String)>,
+    meanings: HashSet<(String, String)>,
 }
