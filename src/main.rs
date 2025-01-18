@@ -48,6 +48,7 @@ fn quiz(words_raw: &Vec<Word>) {
             s.trim()
                 .split(',')
                 .map(|x| x.trim().to_owned())
+                .filter(|x| !x.is_empty())
                 .collect::<Vec<String>>()
         };
 
